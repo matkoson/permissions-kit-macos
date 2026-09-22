@@ -30,3 +30,4 @@ jobs:
           file: .build/coverage/cobertura.xml
           language: Swift
           label: code-coverage/swift
+          fail-on-error: false
