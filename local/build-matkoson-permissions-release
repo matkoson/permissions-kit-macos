@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+cd "$root"
+swift build -c release >&2
+bin=$(swift build -c release --show-bin-path)
+printf '%s\n' "$bin/matkoson-permissions"

@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+identity=${APPLE_SIGNING_IDENTITY:-"Developer ID Application: Mateusz Koson (73YQ858MMF)"}
+binary=$("$root/local/build-matkoson-permissions-release")
+codesign --force --sign "$identity" --options runtime --timestamp "$binary"
+codesign --verify --verbose=2 "$binary"
+printf '%s\n' "$binary"

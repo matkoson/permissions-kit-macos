@@ -1,0 +1,39 @@
+#!/bin/bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+swift test --enable-code-coverage
+BIN_DIR="$(swift build --show-bin-path)"
+XCBIN=""
+for candidate in \
+  "$BIN_DIR/MacPermissionKitPackageTests.xctest/Contents/MacOS/MacPermissionKitPackageTests" \
+  "$BIN_DIR/MacPermissionKitTests.xctest/Contents/MacOS/MacPermissionKitTests" \
+  "$BIN_DIR/MacPermissionKitPackageTests" \
+  "$BIN_DIR/MacPermissionKitTests"
+do
+  if [ -x "$candidate" ]; then
+    XCBIN="$candidate"
+    break
+  fi
+done
+if [ -z "$XCBIN" ]; then
+  printf 'test binary was not found under %s\n' "$BIN_DIR" >&2
+  exit 1
+fi
+PROFDATA="$BIN_DIR/codecov/default.profdata"
+if [ ! -f "$PROFDATA" ]; then
+  printf 'coverage profile was not found at %s\n' "$PROFDATA" >&2
+  exit 1
+fi
+mkdir -p .build/coverage
+LCOV=".build/coverage/coverage.lcov"
+# LivePermissionCalls.swift is the OS boundary. Invoking those requests presents
+# system dialogs, so the coverage gate measures the catalog, decider, orchestrator, and CLI.
+xcrun llvm-cov export \
+  -format=lcov \
+  -instr-profile "$PROFDATA" \
+  -ignore-filename-regex='LivePermissionCalls.swift' \
+  "$XCBIN" \
+  Sources/MacPermissionKit \
+  > "$LCOV"
+swift "local/LcovToCobertura.swift" "$LCOV" ".build/coverage/cobertura.xml"
