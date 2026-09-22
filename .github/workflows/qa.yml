@@ -13,7 +13,7 @@ permissions:
 jobs:
   qa:
     name: QA
-    runs-on: [self-hosted, macOS, ARM64, matkoson-qa, fleet, m4-fleet]
+    runs-on: macos-26
     timeout-minutes: 30
     steps:
       - name: Check out source
