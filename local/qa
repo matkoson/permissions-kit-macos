@@ -28,11 +28,12 @@ fi
 mkdir -p .build/coverage
 LCOV=".build/coverage/coverage.lcov"
 # LivePermissionCalls.swift is the OS boundary. Invoking those requests presents
-# system dialogs, so the coverage gate measures the catalog, decider, orchestrator, and CLI.
+# system dialogs. SwiftUI surfaces under UI/ are exercised by hosts, not the
+# XCTest gate. SwiftUIX checkouts must never enter the coverage denominator.
 xcrun llvm-cov export \
   -format=lcov \
   -instr-profile "$PROFDATA" \
-  -ignore-filename-regex='LivePermissionCalls.swift' \
+  -ignore-filename-regex='LivePermissionCalls\.swift|\.build/checkouts/|Sources/MacPermissionKit/UI/' \
   "$XCBIN" \
   Sources/MacPermissionKit \
   > "$LCOV"
