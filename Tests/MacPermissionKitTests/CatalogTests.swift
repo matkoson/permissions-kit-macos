@@ -45,7 +45,7 @@ final class CatalogTests: XCTestCase {
 
     func testSettingsOnlyNeverClaimsASystemPrompt() {
         let settingsOnly: Set<PermissionID> = [
-            .systemAudioCapture, .fullDiskAccess, .usb, .desktopFolder, .documentsFolder,
+            .systemAudioCapture, .fullDiskAccess, .mediaLibrary, .usb, .desktopFolder, .documentsFolder,
             .downloadsFolder, .removableVolumes, .networkVolumes, .developerTools, .appManagement,
         ]
         for id in settingsOnly {

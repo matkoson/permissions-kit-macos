@@ -11,7 +11,14 @@ final class CLITests: XCTestCase {
         XCTAssertEqual(try PermissionCommandLine.parse(["status", "--json"]), .status(json: true))
         XCTAssertEqual(try PermissionCommandLine.parse(["request", "microphone"]), .request(.microphone))
         XCTAssertEqual(try PermissionCommandLine.parse(["open-settings", "fullDiskAccess"]), .openSettings(.fullDiskAccess))
-        XCTAssertEqual(try PermissionCommandLine.parse(["reset", "screenRecording"]), .reset(.screenRecording))
+        XCTAssertEqual(
+            try PermissionCommandLine.parse(["reset", "screenRecording"]),
+            .reset(.screenRecording, bundleIdentifier: nil)
+        )
+        XCTAssertEqual(
+            try PermissionCommandLine.parse(["reset", "screenRecording", "app.example.kit"]),
+            .reset(.screenRecording, bundleIdentifier: "app.example.kit")
+        )
         XCTAssertEqual(try PermissionCommandLine.parse(["advance"]), .advance)
     }
 

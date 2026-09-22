@@ -166,10 +166,10 @@ enum PermissionDecider {
         switch id {
         case .accessibility:
             let granted = primitives.accessibilityTrusted(true)
-            return await finish(id, granted: granted, primitives: primitives, restricted: false)
+            return await finish(id, granted: granted, primitives: primitives)
         case .screenRecording:
             let granted = primitives.screenRequest()
-            return await finish(id, granted: granted, primitives: primitives, restricted: false)
+            return await finish(id, granted: granted, primitives: primitives)
         case .inputMonitoring:
             let status = primitives.inputStatus()
             if status == .restricted {
@@ -177,7 +177,7 @@ enum PermissionDecider {
                 return PermissionBackendEvent(authorization: .restricted, promptPresented: false, settingsOpened: opened)
             }
             let granted = primitives.inputRequest()
-            return await finish(id, granted: granted, primitives: primitives, restricted: false)
+            return await finish(id, granted: granted, primitives: primitives)
         case .camera:
             return await capture(true, id: id, primitives: primitives)
         case .microphone:
@@ -219,7 +219,7 @@ enum PermissionDecider {
             return PermissionBackendEvent(authorization: .restricted, promptPresented: false, settingsOpened: opened)
         }
         let granted = await primitives.captureRequest(video)
-        return await finish(id, granted: granted, primitives: primitives, restricted: false)
+        return await finish(id, granted: granted, primitives: primitives)
     }
 
     private static func authorizationRequest(
@@ -242,13 +242,8 @@ enum PermissionDecider {
     private static func finish(
         _ id: PermissionID,
         granted: Bool,
-        primitives: PermissionPrimitives,
-        restricted: Bool
+        primitives: PermissionPrimitives
     ) async -> PermissionBackendEvent {
-        if restricted {
-            let opened = await openSettings(id, primitives: primitives)
-            return PermissionBackendEvent(authorization: .restricted, promptPresented: false, settingsOpened: opened)
-        }
         if granted {
             return PermissionBackendEvent(authorization: .granted, promptPresented: true, settingsOpened: false)
         }

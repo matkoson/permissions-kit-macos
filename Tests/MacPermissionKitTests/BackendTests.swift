@@ -194,7 +194,6 @@ final class BackendTests: XCTestCase {
             (.contacts, "contacts-request"),
             (.calendars, "events-request:false"),
             (.reminders, "events-request:true"),
-            (.mediaLibrary, "media-request"),
             (.notifications, "note-request"),
             (.location, "location-request"),
             (.bluetooth, "bluetooth-request"),

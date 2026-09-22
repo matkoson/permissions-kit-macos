@@ -89,6 +89,8 @@ public struct PermissionBackendEvent: Sendable, Hashable {
 public enum PermissionKitError: Error, Equatable, Sendable, CustomStringConvertible {
     case resetUnsupported(PermissionID)
     case resetFailed(PermissionID, Int32)
+    case bundleIdentifierRequired
+    case operationInFlight
     case skipNotAllowed(PermissionID)
     case backend(String)
     case command(String)
@@ -99,6 +101,10 @@ public enum PermissionKitError: Error, Equatable, Sendable, CustomStringConverti
             return "Reset is not available for \(id.rawValue) because it has no stable TCC service name."
         case .resetFailed(let id, let status):
             return "Reset failed for \(id.rawValue) with status \(status)."
+        case .bundleIdentifierRequired:
+            return "Reset requires a nonempty bundle identifier so it cannot clear the service for every app."
+        case .operationInFlight:
+            return "Another permission operation is already in progress."
         case .skipNotAllowed(let id):
             return "\(id.rawValue) is not optional and cannot be skipped."
         case .backend(let message):

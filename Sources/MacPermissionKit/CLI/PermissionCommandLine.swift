@@ -6,7 +6,7 @@ public enum PermissionCommand: Equatable, Sendable {
     case status(json: Bool)
     case request(PermissionID)
     case openSettings(PermissionID)
-    case reset(PermissionID)
+    case reset(PermissionID, bundleIdentifier: String?)
     case advance
 }
 
@@ -20,7 +20,7 @@ public enum PermissionCommandLine {
       matkoson-permissions status [--json]
       matkoson-permissions request <id>
       matkoson-permissions open-settings <id>
-      matkoson-permissions reset <id>
+      matkoson-permissions reset <id> [bundle-id]
       matkoson-permissions advance
 
     status reads the current authorization without presenting a dialog.
@@ -44,11 +44,12 @@ public enum PermissionCommandLine {
             }
             return .status(json: json)
         case "request":
-            return .request(try identifier(arguments))
+            return .request(try identifier(arguments).id)
         case "open-settings":
-            return .openSettings(try identifier(arguments))
+            return .openSettings(try identifier(arguments).id)
         case "reset":
-            return .reset(try identifier(arguments))
+            let parsed = try identifier(arguments, extra: .bundleIdentifier)
+            return .reset(parsed.id, bundleIdentifier: parsed.bundleIdentifier)
         case "advance":
             if arguments.count != 1 {
                 throw PermissionKitError.command("advance takes no arguments.")
@@ -110,8 +111,11 @@ public enum PermissionCommandLine {
                 let result = await session.openSettings(id)
                 print("\(id.rawValue)\tsettingsOpened=\(result.settingsOpened)")
                 return 0
-            case .reset(let id):
-                let session = PermissionOrchestrator(required: PermissionKind.startupDefaultOrder)
+            case .reset(let id, let bundleIdentifier):
+                let session = PermissionOrchestrator(
+                    required: PermissionKind.startupDefaultOrder,
+                    bundleIdentifier: bundleIdentifier ?? Bundle.main.bundleIdentifier
+                )
                 try session.reset(id)
                 print("\(id.rawValue)\treset")
                 return 0
@@ -130,17 +134,35 @@ public enum PermissionCommandLine {
         }
     }
 
-    private static func identifier(_ arguments: [String]) throws -> PermissionID {
+    private enum ExtraArgument {
+        case forbidden
+        case bundleIdentifier
+    }
+
+    private static func identifier(
+        _ arguments: [String],
+        extra: ExtraArgument = .forbidden
+    ) throws -> (id: PermissionID, bundleIdentifier: String?) {
         guard arguments.count >= 2 else {
             throw PermissionKitError.command("Missing permission id.")
         }
-        if arguments.count > 2 {
-            throw PermissionKitError.command("Unexpected argument \(arguments[2]).")
+        let bundleIdentifier: String?
+        switch extra {
+        case .forbidden:
+            if arguments.count > 2 {
+                throw PermissionKitError.command("Unexpected argument \(arguments[2]).")
+            }
+            bundleIdentifier = nil
+        case .bundleIdentifier:
+            if arguments.count > 3 {
+                throw PermissionKitError.command("Unexpected argument \(arguments[3]).")
+            }
+            bundleIdentifier = arguments.count == 3 ? arguments[2] : nil
         }
         guard let id = PermissionID(rawValue: arguments[1]) else {
             throw PermissionKitError.command("Unknown permission id \(arguments[1]).")
         }
-        return id
+        return (id, bundleIdentifier)
     }
 }
 

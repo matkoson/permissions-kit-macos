@@ -15,6 +15,8 @@ public final class PermissionOrchestrator {
 
     private let backend: any PermissionBackend
     private let bundleIdentifier: String?
+    private var operationInFlight = false
+    private var operationWaiters: [CheckedContinuation<Void, Never>] = []
 
     public convenience init(
         required: [PermissionID],
@@ -66,7 +68,16 @@ public final class PermissionOrchestrator {
 
     public func refresh() {
         let previous = snapshot
-        let next = Self.makeSnapshot(backend: backend)
+        var next = Self.makeSnapshot(backend: backend)
+        var records = next.records
+        for index in records.indices {
+            let probed = records[index].authorization
+            let prior = previous.authorization(for: records[index].id)
+            if probed == .unknown, prior != .unknown, prior != .unsupported {
+                records[index].authorization = prior
+            }
+        }
+        next = PermissionSnapshot(records: records)
         for id in PermissionID.allCases {
             let kind = PermissionKind.kind(for: id)
             guard kind.relaunch != .none else { continue }
@@ -88,6 +99,8 @@ public final class PermissionOrchestrator {
 
     @discardableResult
     public func request(_ id: PermissionID) async -> PermissionRequestResult {
+        await acquireOperation()
+        defer { releaseOperation() }
         pending = id
         defer { pending = nil }
         let event = await backend.request(id)
@@ -120,6 +133,8 @@ public final class PermissionOrchestrator {
 
     @discardableResult
     public func openSettings(_ id: PermissionID) async -> PermissionRequestResult {
+        await acquireOperation()
+        defer { releaseOperation() }
         pending = id
         defer { pending = nil }
         let opened = await backend.openSettings(for: id)
@@ -135,6 +150,12 @@ public final class PermissionOrchestrator {
     }
 
     public func reset(_ id: PermissionID) throws {
+        guard let bundleIdentifier, bundleIdentifier.isEmpty == false else {
+            throw PermissionKitError.bundleIdentifierRequired
+        }
+        if operationInFlight {
+            throw PermissionKitError.operationInFlight
+        }
         try backend.reset(id, bundleIdentifier: bundleIdentifier)
         refresh()
     }
@@ -144,6 +165,24 @@ public final class PermissionOrchestrator {
             throw PermissionKitError.skipNotAllowed(id)
         }
         skipped.insert(id)
+    }
+
+    private func acquireOperation() async {
+        if operationInFlight {
+            await withCheckedContinuation { continuation in
+                operationWaiters.append(continuation)
+            }
+            return
+        }
+        operationInFlight = true
+    }
+
+    private func releaseOperation() {
+        if operationWaiters.isEmpty {
+            operationInFlight = false
+        } else {
+            operationWaiters.removeFirst().resume()
+        }
     }
 
     private func replaceAuthorization(_ id: PermissionID, with authorization: PermissionAuthorization) {

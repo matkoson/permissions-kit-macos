@@ -243,6 +243,45 @@ final class OrchestratorTests: XCTestCase {
         XCTAssertEqual(orchestrator.snapshot.authorization(for: .localNetwork), .unknown)
     }
 
+    func testResetRequiresBundleIdentifier() {
+        let engine = backend(CallLog())
+        let orchestrator = PermissionOrchestrator(
+            required: [.microphone],
+            policy: .standard,
+            backend: engine,
+            bundleIdentifier: nil
+        )
+        XCTAssertThrowsError(try orchestrator.reset(.microphone)) { error in
+            XCTAssertEqual(error as? PermissionKitError, .bundleIdentifierRequired)
+        }
+        let blank = PermissionOrchestrator(
+            required: [.microphone],
+            policy: .standard,
+            backend: engine,
+            bundleIdentifier: ""
+        )
+        XCTAssertThrowsError(try blank.reset(.microphone)) { error in
+            XCTAssertEqual(error as? PermissionKitError, .bundleIdentifierRequired)
+        }
+    }
+
+    func testRefreshKeepsGrantedWhenProbeIsUnknown() async {
+        let log = CallLog()
+        let engine = backend(log) { primitives in
+            primitives.notificationRequest = { .granted }
+        }
+        let orchestrator = PermissionOrchestrator(
+            required: [.notifications],
+            policy: .standard,
+            backend: engine,
+            bundleIdentifier: nil
+        )
+        let result = await orchestrator.request(.notifications)
+        XCTAssertEqual(result.record.authorization, .granted)
+        orchestrator.refresh()
+        XCTAssertEqual(orchestrator.snapshot.authorization(for: .notifications), .granted)
+    }
+
     func testSnapshotHelpers() {
         let snapshot = PermissionSnapshot(records: [
             PermissionRecord(id: .camera, authorization: .granted),
