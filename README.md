@@ -35,17 +35,20 @@ Local Network status stays `.unknown`. The request sends one UDP packet to the m
 
 ## Command line
 
-```text
-matkoson-permissions help
-matkoson-permissions catalog
-matkoson-permissions status [--json]
-matkoson-permissions request <id>
-matkoson-permissions open-settings <id>
-matkoson-permissions reset <id>
-matkoson-permissions advance
-```
+Each behavior is its own script:
 
-`status` and `catalog` do not present dialogs. `request`, `open-settings`, `reset`, and `advance` perform the same actions as the library.
+- `local/matkoson-permissions-help`
+- `local/matkoson-permissions-catalog`
+- `local/matkoson-permissions-status`
+- `local/matkoson-permissions-status-json`
+- `local/matkoson-permissions-request` with a permission id
+- `local/matkoson-permissions-open-settings` with a permission id
+- `local/matkoson-permissions-reset` with a permission id
+- `local/matkoson-permissions-advance`
+- `local/build-matkoson-permissions-release`
+- `local/sign-matkoson-permissions-developer-id`
+
+`status` and `catalog` do not present dialogs. `request`, `open-settings`, `reset`, and `advance` perform the same actions as the library. `local/sign-matkoson-permissions-developer-id` signs the release executable with `APPLE_SIGNING_IDENTITY`, defaulting to Developer ID Application: Mateusz Koson (73YQ858MMF).
 
 ## Checks
 
