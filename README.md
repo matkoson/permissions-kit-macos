@@ -1,6 +1,6 @@
 # MacPermissionKit
 
-Logic-only Swift 6 permission engine for a later macOS 26 host. This package owns one process TCC session: the catalog, probes, request and Settings strategies, an observable orchestrator, and slot contracts. It does not ship SwiftUI views.
+Swift 6 permission engine for macOS 26+ with a Liquid Glass SwiftUI + SwiftUIX presentation layer.
 
 Requires Swift 6.2+ and macOS 26+.
 
@@ -21,17 +21,40 @@ try session.reset(.screenRecording)
 
 Bind the host only to `snapshot`, `pending`, `lastResult`, `relaunchRequired`, `nextRequired`, and `allRequiredSatisfied`.
 
-`advanceStartup()` asks for one ungranted required permission and returns. Screen Recording and Input Monitoring set `relaunchRequired` after a grant. Settings-only permissions (Full Disk Access, App Management, folders, USB, system audio) never report `.granted` from `request`; a later `refresh()` may observe Full Disk Access by reading a protected preferences file.
+## Presentation
 
-Screen Recording uses `CGPreflightScreenCaptureAccess` and `CGRequestScreenCaptureAccess`. The package does not call the screen-sharing picker to probe.
+```swift
+import MacPermissionKit
+import SwiftUI
 
-Local Network status stays `.unknown`. The request sends one UDP packet to the mDNS group so the system can show its prompt.
+@main
+struct HostApp: App {
+    @State private var session = PermissionSessionController()
 
-`reset` runs the system TCC reset tool for permissions with a stable service name. System audio, local network, notifications, USB, and App Management do not, because guessing a service name could reset the wrong row.
+    var body: some Scene {
+        PermissionStartupScene(session: session)
 
-## Slots
+        Window("Settings", id: "settings") {
+            PermissionSettingsPane(session: session)
+        }
+    }
+}
+```
 
-`PermissionSlot` names the host-owned presentation points (`SLOT_StartupGlassShell` through `SLOT_Completion`). `PermissionPresentationPolicy.standard` treats camera, system audio, automation, and local network as optional. `PermissionSlotCopy` supplies the button titles and the drag-into-list sentence.
+| Slot | Surface |
+|---|---|
+| `SLOT_StartupGlassShell` | `StartupGlassShellView` / `PermissionStartupScene` |
+| `SLOT_PermissionList` / `SLOT_PermissionRow` | `PermissionListView` / `PermissionRowView` |
+| `SLOT_SystemPromptPending` | `SystemPromptPendingView` |
+| `SLOT_OpenSettingsCTA` | `OpenSettingsCTAView` |
+| `SLOT_DragIntoListHint` | `DragIntoListHintView` |
+| `SLOT_QuitAndRelaunch` | `QuitAndRelaunchView` |
+| `SLOT_DeniedRecovery` | `DeniedRecoveryView` |
+| `SLOT_Completion` | `CompletionView` |
+
+`PermissionSessionController` implements `PermissionStartupGlassShellSlot` and owns the orchestrator. Chrome uses SwiftUI Liquid Glass (`glassEffect`, `GlassEffectContainer`, `.glass` / `.glassProminent`) plus SwiftUIX `WindowReader` for keeping the host window frontmost during TCC prompts.
+
+`PermissionPresentationPolicy.standard` treats camera, system audio, automation, and local network as optional. `PermissionSlotCopy` supplies button titles and the drag-into-list sentence.
 
 ## Command line
 
@@ -47,8 +70,6 @@ Each behavior is its own script:
 - `local/matkoson-permissions-advance`
 - `local/build-matkoson-permissions-release`
 - `local/sign-matkoson-permissions-developer-id`
-
-`status` and `catalog` do not present dialogs. `request`, `open-settings`, `reset`, and `advance` perform the same actions as the library. `local/sign-matkoson-permissions-developer-id` signs the release executable with `APPLE_SIGNING_IDENTITY`, defaulting to Developer ID Application: Mateusz Koson (73YQ858MMF).
 
 ## Checks
 

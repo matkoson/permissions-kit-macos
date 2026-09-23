@@ -10,9 +10,15 @@ let package = Package(
         .library(name: "MacPermissionKit", targets: ["MacPermissionKit"]),
         .executable(name: "matkoson-permissions", targets: ["matkoson-permissions"])
     ],
+    dependencies: [
+        .package(url: "https://github.com/SwiftUIX/SwiftUIX.git", branch: "master")
+    ],
     targets: [
         .target(
             name: "MacPermissionKit",
+            dependencies: [
+                .product(name: "SwiftUIX", package: "SwiftUIX")
+            ],
             path: "Sources/MacPermissionKit",
             swiftSettings: [
                 .swiftLanguageMode(.v6),

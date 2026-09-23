@@ -28,7 +28,7 @@ public struct PermissionPresentationPolicy: Sendable, Hashable {
     }
 }
 
-/// Names of the host-owned presentation slots. This package ships no views.
+/// Names of the presentation slots. Concrete SwiftUI surfaces live under `UI/`.
 public enum PermissionSlot: String, CaseIterable, Sendable, Codable {
     case startupGlassShell = "SLOT_StartupGlassShell"
     case permissionList = "SLOT_PermissionList"
