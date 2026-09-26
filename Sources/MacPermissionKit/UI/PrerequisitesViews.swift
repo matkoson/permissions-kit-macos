@@ -83,7 +83,7 @@ public struct PrerequisitesChecklistView: View {
             Spacer()
             Button {
                 gate.refresh()
-                session.refreshFromWindowKey()
+                session.syncSelectionFromOrchestrator()
             } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
@@ -131,7 +131,8 @@ public struct PrerequisitesChecklistRow: View {
 
     public var body: some View {
         let kind = PermissionKind.kind(for: record.id)
-        let checked = record.authorization == .granted
+        let checked = record.authorization == .granted || record.authorization == .unsupported
+        let settingsOnly = kind.promptKind == .settingsOnly || kind.promptKind == .opaque
         HStack(alignment: .center, spacing: 14) {
             Image(systemName: checked ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
@@ -156,10 +157,19 @@ public struct PrerequisitesChecklistRow: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(PermissionChrome.statusTint(record.authorization))
 
-            Button(PermissionSlotCopy.primaryButtonTitle(id: record.id)) {
-                Task { await session.request(record.id) }
+            if checked == false {
+                Button(PermissionSlotCopy.primaryButtonTitle(id: record.id)) {
+                    Task { await session.request(record.id) }
+                }
+                .buttonStyle(.glassProminent)
+                if settingsOnly {
+                    Button("Confirm") {
+                        session.confirmSettingsGrant(record.id)
+                    }
+                    .buttonStyle(.glass)
+                    .help("Mark granted after enabling in System Settings, then Refresh if needed.")
+                }
             }
-            .buttonStyle(.glassProminent)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)

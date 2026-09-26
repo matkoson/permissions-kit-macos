@@ -220,14 +220,6 @@ enum PermissionDecider {
             return await authorizationRequest(id, primitives: primitives) { await primitives.locationRequest() }
         case .bluetooth:
             return await authorizationRequest(id, primitives: primitives) { await primitives.bluetoothRequest() }
-        case .home:
-            let opened = await openSettings(id, primitives: primitives)
-            let authorization = primitives.homeStatus()
-            return PermissionBackendEvent(
-                authorization: authorization,
-                promptPresented: false,
-                settingsOpened: opened
-            )
         default:
             let opened = await openSettings(id, primitives: primitives)
             return PermissionBackendEvent(authorization: .unknown, promptPresented: false, settingsOpened: opened)

@@ -12,23 +12,24 @@ import SwiftUI
 
 @main
 struct HostApp: App {
+    // One orchestrator: gate owns it; session observes the same instance.
     @State private var gate = PrerequisitesNavigationGate(
         configuration: .standard
         // routine-worker / control / automation:
         // configuration: .withAppManagement
     )
-    @State private var session = PermissionSessionController(
-        configuration: .standard
-    )
+    @State private var session: PermissionSessionController
+
+    init() {
+        let gate = PrerequisitesNavigationGate(configuration: .standard)
+        _gate = State(initialValue: gate)
+        _session = State(initialValue: PermissionSessionController(orchestrator: gate.orchestrator))
+    }
 
     var body: some Scene {
         WindowGroup {
             PrerequisitesRootView(gate: gate, session: session) {
                 Text("Home")
-            }
-            .onAppear {
-                // Share one orchestrator in production hosts:
-                // build gate first, then PermissionSessionController(orchestrator: gate.orchestrator)
             }
         }
     }

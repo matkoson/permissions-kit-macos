@@ -2,8 +2,16 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${ROOT}"
+CODEGRAPH="${CODEGRAPH_BIN:-$(command -v codegraph || true)}"
+if [[ -z "${CODEGRAPH}" && -x /Users/matkoson/bin/codegraph ]]; then
+  CODEGRAPH=/Users/matkoson/bin/codegraph
+fi
+if [[ -z "${CODEGRAPH}" ]]; then
+  echo "codegraph executable not found on PATH (set CODEGRAPH_BIN)" >&2
+  exit 1
+fi
 if [[ -d .codegraph ]]; then
-  /Users/matkoson/bin/codegraph update || /Users/matkoson/bin/codegraph init
+  "${CODEGRAPH}" update || "${CODEGRAPH}" init
 else
-  /Users/matkoson/bin/codegraph init
+  "${CODEGRAPH}" init
 fi

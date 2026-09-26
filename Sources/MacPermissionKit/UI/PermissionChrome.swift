@@ -50,7 +50,7 @@ enum PermissionChrome {
         case .reminders: "checklist"
         case .photos, .photosAddOnly: "photo"
         case .mediaLibrary: "music.note.list"
-        case .home: "home.fill"
+        case .home: "house.fill"
         case .notifications: "bell.fill"
         case .developerTools: "hammer.fill"
         case .appManagement: "app.badge.fill"

@@ -83,6 +83,14 @@ public final class PermissionSessionController: PermissionStartupGlassShellSlot 
         }
     }
 
+    /// Update selection from an already-refreshed orchestrator (e.g. after `gate.refresh()`).
+    /// Does not re-probe permissions.
+    public func syncSelectionFromOrchestrator() {
+        if let next = orchestrator.nextRequired {
+            selectedID = next
+        }
+    }
+
     public func advance() async {
         let result = await orchestrator.advanceStartup()
         apply(result: result)
@@ -113,6 +121,17 @@ public final class PermissionSessionController: PermissionStartupGlassShellSlot 
 
     public func openSettings(for id: PermissionID) async {
         _ = await orchestrator.openSettings(id)
+    }
+
+    /// After Settings for kinds with no public probe (Home, Developer Tools), host confirms grant.
+    public func confirmSettingsGrant(_ id: PermissionID) {
+        do {
+            try orchestrator.confirmSettingsGrant(id)
+            selectedID = orchestrator.nextRequired ?? id
+            if canDismiss { finishOnboarding() }
+        } catch {
+            // Leave UI unchanged when id is not settings-only.
+        }
     }
 
     public func openSettingsForSelection() async {

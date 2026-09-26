@@ -44,6 +44,7 @@ enum AppleAuthorizationMap {
         }
     }
 
+
     static func contacts(_ status: CNAuthorizationStatus) -> PermissionAuthorization {
         switch status {
         case .notDetermined: return .notDetermined
@@ -229,6 +230,7 @@ enum LivePermissionCalls {
     }
 
     static func mediaStatus() -> PermissionAuthorization {
+        // MPMediaLibrary authorization APIs are unavailable on macOS; Settings + Confirm.
         .unknown
     }
 
@@ -283,7 +285,11 @@ enum LivePermissionCalls {
 
     static func automationStatus(target: String) -> PermissionAuthorization {
         guard let bundleID = bundleIdentifier(forAutomationTarget: target) else {
-            return .unknown
+            return .unsupported
+        }
+        // Missing / uninstalled targets must not block the checklist forever.
+        if NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) == nil {
+            return .unsupported
         }
         let targetDesc = NSAppleEventDescriptor(bundleIdentifier: bundleID)
         let status = AEDeterminePermissionToAutomateTarget(
@@ -335,6 +341,9 @@ enum LivePermissionCalls {
             return .denied
         case OSStatus(errAEEventWouldRequireUserConsent):
             return .notDetermined
+        case OSStatus(procNotFound):
+            // Target not running / not installed — do not leave .unknown forever.
+            return .unsupported
         default:
             return .unknown
         }
