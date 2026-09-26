@@ -37,7 +37,7 @@ public final class PermissionOrchestrator {
         backend: any PermissionBackend,
         bundleIdentifier: String?
     ) {
-        self.required = Self.unique(required)
+        self.required = Self.uniqueIDs(required)
         self.policy = policy
         self.backend = backend
         self.bundleIdentifier = bundleIdentifier
@@ -55,10 +55,12 @@ public final class PermissionOrchestrator {
         }
     }
 
-    /// Blocking startup permissions are granted. Optional ids do not hold this open.
+    /// Blocking startup permissions are granted (or unsupported / not installed). Optional ids do not hold this open.
     public var allRequiredSatisfied: Bool {
         required.allSatisfy { id in
-            policy.optionalIDs.contains(id) || snapshot.authorization(for: id) == .granted
+            if policy.optionalIDs.contains(id) { return true }
+            let authorization = snapshot.authorization(for: id)
+            return authorization == .granted || authorization == .unsupported
         }
     }
 
@@ -167,6 +169,15 @@ public final class PermissionOrchestrator {
         skipped.insert(id)
     }
 
+    /// For settings-only kinds with no public probe (Home, Developer Tools): host/UI confirms after Settings.
+    public func confirmSettingsGrant(_ id: PermissionID) throws {
+        let kind = PermissionKind.kind(for: id)
+        guard kind.promptKind == .settingsOnly || kind.promptKind == .opaque else {
+            throw PermissionKitError.command("confirmSettingsGrant is only for settings-only permissions.")
+        }
+        replaceAuthorization(id, with: .granted)
+    }
+
     private func acquireOperation() async {
         if operationInFlight {
             await withCheckedContinuation { continuation in
@@ -203,7 +214,7 @@ public final class PermissionOrchestrator {
         )
     }
 
-    private static func unique(_ ids: [PermissionID]) -> [PermissionID] {
+    nonisolated public static func uniqueIDs(_ ids: [PermissionID]) -> [PermissionID] {
         var seen: Set<PermissionID> = []
         var ordered: [PermissionID] = []
         for id in ids where seen.insert(id).inserted {

@@ -7,13 +7,8 @@ public struct PermissionPresentationPolicy: Sendable, Hashable {
     public var blockUntilRequiredGranted: Bool
 
     public init(
-        startupIDs: [PermissionID] = PermissionKind.startupDefaultOrder,
-        optionalIDs: Set<PermissionID> = [
-            .camera,
-            .systemAudioCapture,
-            .automation,
-            .localNetwork,
-        ],
+        startupIDs: [PermissionID] = PermissionKind.prerequisitesDefaultRequired,
+        optionalIDs: Set<PermissionID> = [],
         blockUntilRequiredGranted: Bool = true
     ) {
         self.startupIDs = startupIDs
@@ -21,7 +16,20 @@ public struct PermissionPresentationPolicy: Sendable, Hashable {
         self.blockUntilRequiredGranted = blockUntilRequiredGranted
     }
 
+    /// Prerequisites checklist defaults (no optional skips).
     public static let standard = PermissionPresentationPolicy()
+
+    /// Legacy optional set from the pre-Prerequisites wizard era.
+    public static let legacyStartup = PermissionPresentationPolicy(
+        startupIDs: PermissionKind.startupDefaultOrder,
+        optionalIDs: [
+            .camera,
+            .systemAudioCapture,
+            .automation,
+            .localNetwork,
+        ],
+        blockUntilRequiredGranted: true
+    )
 
     public var blockingIDs: [PermissionID] {
         startupIDs.filter { !optionalIDs.contains($0) }
@@ -31,6 +39,8 @@ public struct PermissionPresentationPolicy: Sendable, Hashable {
 /// Names of the presentation slots. Concrete SwiftUI surfaces live under `UI/`.
 public enum PermissionSlot: String, CaseIterable, Sendable, Codable {
     case startupGlassShell = "SLOT_StartupGlassShell"
+    case prerequisitesChecklist = "SLOT_PrerequisitesChecklist"
+    case prerequisitesSplash = "SLOT_PrerequisitesSplash"
     case permissionList = "SLOT_PermissionList"
     case permissionRow = "SLOT_PermissionRow"
     case systemPromptPending = "SLOT_SystemPromptPending"

@@ -6,24 +6,23 @@ swift test --enable-code-coverage
 BIN_DIR="$(swift build --show-bin-path)"
 XCBIN=""
 for candidate in \
-  "$BIN_DIR/MacPermissionKitPackageTests.xctest/Contents/MacOS/MacPermissionKitPackageTests" \
-  "$BIN_DIR/MacPermissionKitTests.xctest/Contents/MacOS/MacPermissionKitTests" \
-  "$BIN_DIR/MacPermissionKitPackageTests" \
-  "$BIN_DIR/MacPermissionKitTests"
-do
-  if [ -x "$candidate" ]; then
-    XCBIN="$candidate"
-    break
-  fi
+	"$BIN_DIR/MacPermissionKitPackageTests.xctest/Contents/MacOS/MacPermissionKitPackageTests" \
+	"$BIN_DIR/MacPermissionKitTests.xctest/Contents/MacOS/MacPermissionKitTests" \
+	"$BIN_DIR/MacPermissionKitPackageTests" \
+	"$BIN_DIR/MacPermissionKitTests"; do
+	if [ -x "$candidate" ]; then
+		XCBIN="$candidate"
+		break
+	fi
 done
 if [ -z "$XCBIN" ]; then
-  printf 'test binary was not found under %s\n' "$BIN_DIR" >&2
-  exit 1
+	printf 'test binary was not found under %s\n' "$BIN_DIR" >&2
+	exit 1
 fi
 PROFDATA="$BIN_DIR/codecov/default.profdata"
 if [ ! -f "$PROFDATA" ]; then
-  printf 'coverage profile was not found at %s\n' "$PROFDATA" >&2
-  exit 1
+	printf 'coverage profile was not found at %s\n' "$PROFDATA" >&2
+	exit 1
 fi
 mkdir -p .build/coverage
 LCOV=".build/coverage/coverage.lcov"
@@ -31,10 +30,10 @@ LCOV=".build/coverage/coverage.lcov"
 # system dialogs. SwiftUI surfaces under UI/ are exercised by hosts, not the
 # XCTest gate. SwiftUIX checkouts must never enter the coverage denominator.
 xcrun llvm-cov export \
-  -format=lcov \
-  -instr-profile "$PROFDATA" \
-  -ignore-filename-regex='LivePermissionCalls\.swift|\.build/checkouts/|Sources/MacPermissionKit/UI/' \
-  "$XCBIN" \
-  Sources/MacPermissionKit \
-  > "$LCOV"
+	-format=lcov \
+	-instr-profile "$PROFDATA" \
+	-ignore-filename-regex='LivePermissionCalls\.swift|\.build/checkouts/|Sources/MacPermissionKit/UI/' \
+	"$XCBIN" \
+	Sources/MacPermissionKit \
+	>"$LCOV"
 swift "local/LcovToCobertura.swift" "$LCOV" ".build/coverage/cobertura.xml"

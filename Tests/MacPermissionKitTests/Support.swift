@@ -16,6 +16,24 @@ final class CallLog: @unchecked Sendable {
     }
 }
 
+final class MutableFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: Bool
+    init(_ value: Bool) { stored = value }
+    var value: Bool {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return stored
+        }
+        set {
+            lock.lock()
+            stored = newValue
+            lock.unlock()
+        }
+    }
+}
+
 func recordingPrimitives(_ log: CallLog) -> PermissionPrimitives {
     PermissionPrimitives(
         accessibilityTrusted: { prompt in log.add("ax:\(prompt)"); return false },
@@ -41,7 +59,11 @@ func recordingPrimitives(_ log: CallLog) -> PermissionPrimitives {
         locationRequest: { log.add("location-request"); return .notDetermined },
         bluetoothStatus: { log.add("bluetooth-status"); return .notDetermined },
         bluetoothRequest: { log.add("bluetooth-request"); return .notDetermined },
-        automationRequest: { log.add("automation"); return .denied },
+        homeStatus: { log.add("home-status"); return .unknown },
+        homeRequest: { log.add("home-request"); return .unknown },
+        developerToolsStatus: { log.add("devtools-status"); return .unknown },
+        automationStatus: { target in log.add("automation-status:\(target)"); return .unknown },
+        automationRequest: { target in log.add("automation:\(target)"); return .denied },
         localNetworkNudge: { log.add("lan") },
         fullDiskReadable: { log.add("fda"); return false },
         openURL: { url in log.add("open:\(url.absoluteString)"); return true },
@@ -57,7 +79,7 @@ func backend(_ log: CallLog, _ edit: (inout PermissionPrimitives) -> Void = { _ 
 
 @MainActor
 func session(
-    required: [PermissionID] = PermissionKind.startupDefaultOrder,
+    required: [PermissionID] = PermissionKind.prerequisitesDefaultRequired,
     policy: PermissionPresentationPolicy = .standard,
     probes: [PermissionID: PermissionAuthorization] = [:],
     log: CallLog = CallLog(),
@@ -88,6 +110,19 @@ func session(
         primitives.mediaStatus = { probes[.mediaLibrary] ?? .notDetermined }
         primitives.locationStatus = { probes[.location] ?? .notDetermined }
         primitives.bluetoothStatus = { probes[.bluetooth] ?? .notDetermined }
+        primitives.homeStatus = { probes[.home] ?? .unknown }
+        primitives.developerToolsStatus = { probes[.developerTools] ?? .unknown }
+        primitives.automationStatus = { target in
+            let id: PermissionID? = switch target {
+            case "System Events": .automation
+            case "Shortcuts Events": .automationShortcutsEvents
+            case "TestFlight": .automationTestFlight
+            case "Google Chrome": .automationGoogleChrome
+            case "TextEdit": .automationTextEdit
+            default: nil
+            }
+            return id.flatMap { probes[$0] } ?? .unknown
+        }
         primitives.fullDiskReadable = { probes[.fullDiskAccess] == .granted }
         _ = baseProbe
     }

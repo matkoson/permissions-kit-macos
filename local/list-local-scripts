@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+shopt -s nullglob
+for path in "${ROOT}"/*; do
+	base=$(basename "$path")
+	case "$base" in
+	_* | *.*) continue ;;
+	esac
+	printf '%s\n' "$base"
+done

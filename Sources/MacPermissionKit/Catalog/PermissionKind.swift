@@ -60,7 +60,7 @@ public struct PermissionKind: Sendable, Hashable, Codable {
 
     public static let all: [PermissionKind] = catalog
 
-    /// First-run order. Optional members are chosen by PermissionPresentationPolicy, not by this list.
+    /// Legacy first-run order kept for older hosts. Prefer `prerequisitesDefaultRequired`.
     public static let startupDefaultOrder: [PermissionID] = [
         .accessibility,
         .screenRecording,
@@ -71,6 +71,22 @@ public struct PermissionKind: Sendable, Hashable, Codable {
         .fullDiskAccess,
         .localNetwork,
         .automation,
+    ]
+
+    /// Default required matrix for every Matkoson GUI app (App Management opted in separately).
+    public static let prerequisitesDefaultRequired: [PermissionID] = [
+        .fullDiskAccess,
+        .accessibility,
+        .developerTools,
+        .calendars,
+        .home,
+        .mediaLibrary,
+        .reminders,
+        .automation,
+        .automationShortcutsEvents,
+        .automationTestFlight,
+        .automationGoogleChrome,
+        .automationTextEdit,
     ]
 
     private static let byID: [PermissionID: PermissionKind] = {
@@ -90,7 +106,7 @@ public struct PermissionKind: Sendable, Hashable, Codable {
 }
 
 private let catalog: [PermissionKind] = [
-    kind(.accessibility, family: .privacy, title: "Accessibility", purpose: "Post and observe UI events for automation and computer-use.", prompt: .systemPrompt, relaunch: .recommendedAfterGrant, drag: true, usage: [], entitlements: [], tcc: "kTCCServiceAccessibility", anchor: "Privacy_Accessibility"),
+    kind(.accessibility, family: .privacy, title: "Device Control and Data Access", purpose: "Post and observe UI events for automation and computer-use.", prompt: .systemPrompt, relaunch: .recommendedAfterGrant, drag: true, usage: [], entitlements: [], tcc: "kTCCServiceAccessibility", anchor: "Privacy_Accessibility"),
     kind(.screenRecording, family: .privacy, title: "Screen Recording", purpose: "Read screen pixels. Preflight and request only; never open the share picker to probe.", prompt: .systemPrompt, relaunch: .requiredAfterGrant, drag: true, usage: ["NSScreenCaptureUsageDescription"], entitlements: [], tcc: "kTCCServiceScreenCapture", anchor: "Privacy_ScreenCapture"),
     kind(.inputMonitoring, family: .privacy, title: "Input Monitoring", purpose: "Listen to keyboard and pointer events.", prompt: .systemPrompt, relaunch: .requiredAfterGrant, drag: true, usage: [], entitlements: [], tcc: "kTCCServiceListenEvent", anchor: "Privacy_ListenEvent"),
     kind(.microphone, family: .hardware, title: "Microphone", purpose: "Capture microphone audio.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSMicrophoneUsageDescription"], entitlements: ["com.apple.security.device.audio-input"], tcc: "kTCCServiceMicrophone", anchor: "Privacy_Microphone"),
@@ -98,14 +114,19 @@ private let catalog: [PermissionKind] = [
     kind(.systemAudioCapture, family: .privacy, title: "System Audio Capture", purpose: "Capture system audio. Same Settings list as Screen Recording. No in-process grant API.", prompt: .settingsOnly, relaunch: .recommendedAfterGrant, drag: true, usage: ["NSAudioCaptureUsageDescription"], entitlements: [], tcc: nil, anchor: "Privacy_ScreenCapture"),
     kind(.fullDiskAccess, family: .files, title: "Full Disk Access", purpose: "Read protected user files. Request only opens Settings. A later refresh may observe access.", prompt: .settingsOnly, relaunch: .requiredAfterGrant, drag: true, usage: [], entitlements: [], tcc: "kTCCServiceSystemPolicyAllFiles", anchor: "Privacy_AllFiles"),
     kind(.localNetwork, family: .network, title: "Local Network", purpose: "Talk to devices on the local network. A UDP nudge may surface the prompt. Status stays unknown.", prompt: .sideEffectNudge, relaunch: .none, drag: false, usage: ["NSLocalNetworkUsageDescription"], entitlements: ["com.apple.security.network.client"], tcc: nil, anchor: "Privacy_LocalNetwork"),
-    kind(.automation, family: .automation, title: "Automation", purpose: "Send Apple events to System Events so the Automation prompt can appear.", prompt: .sideEffectNudge, relaunch: .none, drag: false, usage: ["NSAppleEventsUsageDescription"], entitlements: ["com.apple.security.automation.apple-events"], tcc: "kTCCServiceAppleEvents", anchor: "Privacy_Automation"),
+    kind(.automation, family: .automation, title: "Automation — System Events", purpose: "Send Apple events to System Events so the Automation prompt can appear.", prompt: .sideEffectNudge, relaunch: .none, drag: false, usage: ["NSAppleEventsUsageDescription"], entitlements: ["com.apple.security.automation.apple-events"], tcc: "kTCCServiceAppleEvents", anchor: "Privacy_Automation"),
+    kind(.automationShortcutsEvents, family: .automation, title: "Automation — Shortcuts Events", purpose: "Send Apple events to Shortcuts Events.", prompt: .sideEffectNudge, relaunch: .none, drag: false, usage: ["NSAppleEventsUsageDescription"], entitlements: ["com.apple.security.automation.apple-events"], tcc: "kTCCServiceAppleEvents", anchor: "Privacy_Automation"),
+    kind(.automationTestFlight, family: .automation, title: "Automation — TestFlight", purpose: "Send Apple events to TestFlight.app.", prompt: .sideEffectNudge, relaunch: .none, drag: false, usage: ["NSAppleEventsUsageDescription"], entitlements: ["com.apple.security.automation.apple-events"], tcc: "kTCCServiceAppleEvents", anchor: "Privacy_Automation"),
+    kind(.automationGoogleChrome, family: .automation, title: "Automation — Google Chrome", purpose: "Send Apple events to Google Chrome.app.", prompt: .sideEffectNudge, relaunch: .none, drag: false, usage: ["NSAppleEventsUsageDescription"], entitlements: ["com.apple.security.automation.apple-events"], tcc: "kTCCServiceAppleEvents", anchor: "Privacy_Automation"),
+    kind(.automationTextEdit, family: .automation, title: "Automation — TextEdit", purpose: "Send Apple events to TextEdit.app.", prompt: .sideEffectNudge, relaunch: .none, drag: false, usage: ["NSAppleEventsUsageDescription"], entitlements: ["com.apple.security.automation.apple-events"], tcc: "kTCCServiceAppleEvents", anchor: "Privacy_Automation"),
     kind(.speech, family: .privacy, title: "Speech Recognition", purpose: "Use speech recognition.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSSpeechRecognitionUsageDescription"], entitlements: [], tcc: "kTCCServiceSpeechRecognition", anchor: "Privacy_SpeechRecognition"),
     kind(.photos, family: .privacy, title: "Photos", purpose: "Read the photo library.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSPhotoLibraryUsageDescription"], entitlements: ["com.apple.security.personal-information.photos-library"], tcc: "kTCCServicePhotos", anchor: "Privacy_Photos"),
     kind(.photosAddOnly, family: .privacy, title: "Photos (Add Only)", purpose: "Add images to Photos without reading the library.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSPhotoLibraryAddUsageDescription"], entitlements: ["com.apple.security.personal-information.photos-library"], tcc: "kTCCServicePhotosAdd", anchor: "Privacy_Photos"),
     kind(.contacts, family: .privacy, title: "Contacts", purpose: "Read contacts.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSContactsUsageDescription"], entitlements: ["com.apple.security.personal-information.addressbook"], tcc: "kTCCServiceAddressBook", anchor: "Privacy_Contacts"),
-    kind(.calendars, family: .privacy, title: "Calendars", purpose: "Read and write calendars.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSCalendarsUsageDescription", "NSCalendarsFullAccessUsageDescription"], entitlements: ["com.apple.security.personal-information.calendars"], tcc: "kTCCServiceCalendar", anchor: "Privacy_Calendars"),
+    kind(.calendars, family: .privacy, title: "Calendar", purpose: "Read and write calendars.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSCalendarsUsageDescription", "NSCalendarsFullAccessUsageDescription"], entitlements: ["com.apple.security.personal-information.calendars"], tcc: "kTCCServiceCalendar", anchor: "Privacy_Calendars"),
     kind(.reminders, family: .privacy, title: "Reminders", purpose: "Read and write reminders.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSRemindersUsageDescription", "NSRemindersFullAccessUsageDescription"], entitlements: ["com.apple.security.personal-information.calendars"], tcc: "kTCCServiceReminders", anchor: "Privacy_Reminders"),
-    kind(.mediaLibrary, family: .privacy, title: "Media Library", purpose: "Read the Music library. No in-process grant API is called; request opens Settings.", prompt: .settingsOnly, relaunch: .none, drag: false, usage: ["NSAppleMusicUsageDescription"], entitlements: [], tcc: "kTCCServiceMediaLibrary", anchor: "Privacy_Media"),
+    kind(.mediaLibrary, family: .privacy, title: "Media & Apple Music", purpose: "Read the Music library. No public macOS grant API; Open Settings then Confirm after granting.", prompt: .settingsOnly, relaunch: .none, drag: false, usage: ["NSAppleMusicUsageDescription"], entitlements: [], tcc: "kTCCServiceMediaLibrary", anchor: "Privacy_Media"),
+    kind(.home, family: .privacy, title: "Home", purpose: "Access Home / HomeKit. No public macOS probe; Open Settings then Confirm after granting.", prompt: .settingsOnly, relaunch: .none, drag: false, usage: ["NSHomeKitUsageDescription"], entitlements: [], tcc: nil, anchor: "Privacy_HomeKit"),
     kind(.notifications, family: .privacy, title: "Notifications", purpose: "Post notifications.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: [], entitlements: [], tcc: nil, anchor: nil),
     kind(.location, family: .privacy, title: "Location Services", purpose: "Read this Mac location.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSLocationUsageDescription"], entitlements: ["com.apple.security.personal-information.location"], tcc: "kTCCServiceLocation", anchor: "Privacy_LocationServices"),
     kind(.bluetooth, family: .hardware, title: "Bluetooth", purpose: "Use Bluetooth.", prompt: .systemPrompt, relaunch: .none, drag: false, usage: ["NSBluetoothAlwaysUsageDescription"], entitlements: ["com.apple.security.device.bluetooth"], tcc: "kTCCServiceBluetoothAlways", anchor: "Privacy_Bluetooth"),
@@ -115,7 +136,7 @@ private let catalog: [PermissionKind] = [
     kind(.downloadsFolder, family: .files, title: "Downloads Folder", purpose: "Read the Downloads folder.", prompt: .settingsOnly, relaunch: .none, drag: false, usage: [], entitlements: ["com.apple.security.files.downloads.read-write"], tcc: "kTCCServiceSystemPolicyDownloadsFolder", anchor: "Privacy_FilesAndFolders"),
     kind(.removableVolumes, family: .files, title: "Removable Volumes", purpose: "Read removable volumes.", prompt: .settingsOnly, relaunch: .none, drag: false, usage: [], entitlements: [], tcc: "kTCCServiceSystemPolicyRemovableVolumes", anchor: "Privacy_FilesAndFolders"),
     kind(.networkVolumes, family: .files, title: "Network Volumes", purpose: "Read network volumes.", prompt: .settingsOnly, relaunch: .none, drag: false, usage: [], entitlements: ["com.apple.security.network.client"], tcc: "kTCCServiceSystemPolicyNetworkVolumes", anchor: "Privacy_FilesAndFolders"),
-    kind(.developerTools, family: .developer, title: "Developer Tools", purpose: "Run Apple developer tools that need the Developer Tools privacy switch.", prompt: .settingsOnly, relaunch: .none, drag: true, usage: [], entitlements: [], tcc: "kTCCServiceDeveloperTool", anchor: "Privacy_DevTools"),
+    kind(.developerTools, family: .developer, title: "Developer Tools", purpose: "Run Apple developer tools that need the Developer Tools privacy switch. No public probe; Open Settings then Confirm after granting.", prompt: .settingsOnly, relaunch: .none, drag: true, usage: [], entitlements: [], tcc: "kTCCServiceDeveloperTool", anchor: "Privacy_DevTools"),
     kind(.appManagement, family: .developer, title: "App Management", purpose: "Update or modify other apps. No stable public TCC service is called.", prompt: .settingsOnly, relaunch: .recommendedAfterGrant, drag: true, usage: [], entitlements: [], tcc: nil, anchor: "Privacy_AppBundles"),
 ]
 

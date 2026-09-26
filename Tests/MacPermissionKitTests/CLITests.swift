@@ -9,6 +9,10 @@ final class CLITests: XCTestCase {
         XCTAssertEqual(try PermissionCommandLine.parse(["catalog"]), .catalog)
         XCTAssertEqual(try PermissionCommandLine.parse(["status"]), .status(json: false))
         XCTAssertEqual(try PermissionCommandLine.parse(["status", "--json"]), .status(json: true))
+        XCTAssertEqual(try PermissionCommandLine.parse(["checklist"]), .checklist(json: false))
+        XCTAssertEqual(try PermissionCommandLine.parse(["checklist", "--json"]), .checklist(json: true))
+        XCTAssertEqual(try PermissionCommandLine.parse(["gate"]), .gate(json: false))
+        XCTAssertEqual(try PermissionCommandLine.parse(["refresh", "--json"]), .refresh(json: true))
         XCTAssertEqual(try PermissionCommandLine.parse(["request", "microphone"]), .request(.microphone))
         XCTAssertEqual(try PermissionCommandLine.parse(["open-settings", "fullDiskAccess"]), .openSettings(.fullDiskAccess))
         XCTAssertEqual(
@@ -59,7 +63,94 @@ final class CLITests: XCTestCase {
     func testHelpMentionsBinary() {
         XCTAssertTrue(PermissionCommandLine.helpText.contains("matkoson-permissions"))
         XCTAssertTrue(PermissionCommandLine.helpText.contains("status"))
+        XCTAssertTrue(PermissionCommandLine.helpText.contains("checklist"))
+        XCTAssertTrue(PermissionCommandLine.helpText.contains("gate"))
+        XCTAssertTrue(PermissionCommandLine.helpText.contains("refresh"))
         XCTAssertTrue(PermissionCommandLine.helpText.contains("reset"))
+    }
+
+    func testChecklistAndGateRendering() throws {
+        let items = [
+            PermissionRecord(id: .fullDiskAccess, authorization: .granted),
+            PermissionRecord(id: .accessibility, authorization: .denied),
+        ]
+        let text = try PermissionCommandLine.checklistText(items: items, satisfied: false, json: false)
+        XCTAssertTrue(text.contains("checklist\tunchecked"))
+        XCTAssertTrue(text.contains("fullDiskAccess\tchecked"))
+        XCTAssertTrue(text.contains("accessibility\tunchecked"))
+        let gate = try PermissionCommandLine.gateText(
+            satisfied: false,
+            landing: .prerequisites,
+            sidebar: [
+                PrerequisitesSidebarItem(
+                    id: "prerequisites",
+                    kind: .destination,
+                    destination: .prerequisites,
+                    title: "Prerequisites",
+                    isEnabled: true
+                ),
+                PrerequisitesSidebarItem(id: "divider", kind: .divider),
+                PrerequisitesSidebarItem(
+                    id: "home",
+                    kind: .destination,
+                    destination: .home,
+                    title: "Home",
+                    isEnabled: false
+                ),
+            ],
+            json: false
+        )
+        XCTAssertTrue(gate.contains("landing\tprerequisites"))
+        XCTAssertTrue(gate.contains("item\thome\tdisabled\tHome"))
+        XCTAssertTrue(gate.contains("divider\tdivider"))
+    }
+
+    func testExecuteChecklistGateRefreshStatus() async {
+        let checklist = await PermissionCommandLine.execute(
+            commandLine: ["matkoson-permissions", "checklist"]
+        )
+        XCTAssertEqual(checklist, 0)
+        let gate = await PermissionCommandLine.execute(
+            commandLine: ["matkoson-permissions", "gate", "--json"]
+        )
+        XCTAssertEqual(gate, 0)
+        let refresh = await PermissionCommandLine.execute(
+            commandLine: ["matkoson-permissions", "refresh"]
+        )
+        XCTAssertEqual(refresh, 0)
+        let status = await PermissionCommandLine.execute(
+            commandLine: ["matkoson-permissions", "status", "--json"]
+        )
+        XCTAssertEqual(status, 0)
+        let advance = await PermissionCommandLine.execute(
+            commandLine: ["matkoson-permissions", "advance"]
+        )
+        XCTAssertEqual(advance, 0)
+    }
+
+    func testConfigurationPresentationPolicy() {
+        let config = PrerequisitesConfiguration.standard
+        XCTAssertEqual(config.presentationPolicy.startupIDs, config.required)
+        XCTAssertTrue(config.presentationPolicy.optionalIDs.isEmpty)
+        XCTAssertTrue(PermissionID.automation.isAutomationTarget)
+        XCTAssertFalse(PermissionID.microphone.isAutomationTarget)
+        XCTAssertNil(PermissionID.camera.automationTargetName)
+    }
+
+    func testExecuteRequestOpenSettingsAndReset() async {
+        let request = await PermissionCommandLine.execute(
+            commandLine: ["matkoson-permissions", "request", "usb"]
+        )
+        XCTAssertEqual(request, 0)
+        let open = await PermissionCommandLine.execute(
+            commandLine: ["matkoson-permissions", "open-settings", "fullDiskAccess"]
+        )
+        XCTAssertEqual(open, 0)
+        let reset = await PermissionCommandLine.execute(
+            commandLine: ["matkoson-permissions", "reset", "usb", "app.example.kit"]
+        )
+        // usb has no tcc service → nonzero
+        XCTAssertEqual(reset, 2)
     }
 
     func testErrorDescriptions() {

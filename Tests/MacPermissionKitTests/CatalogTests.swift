@@ -27,6 +27,26 @@ final class CatalogTests: XCTestCase {
         )
     }
 
+    func testPrerequisitesDefaultRequired() {
+        XCTAssertEqual(
+            PermissionKind.prerequisitesDefaultRequired,
+            [
+                .fullDiskAccess,
+                .accessibility,
+                .developerTools,
+                .calendars,
+                .home,
+                .mediaLibrary,
+                .reminders,
+                .automation,
+                .automationShortcutsEvents,
+                .automationTestFlight,
+                .automationGoogleChrome,
+                .automationTextEdit,
+            ]
+        )
+    }
+
     func testDragIntoListSet() {
         let drag = Set(PermissionKind.all.filter(\.dragIntoListRequired).map(\.id))
         XCTAssertEqual(
@@ -45,7 +65,7 @@ final class CatalogTests: XCTestCase {
 
     func testSettingsOnlyNeverClaimsASystemPrompt() {
         let settingsOnly: Set<PermissionID> = [
-            .systemAudioCapture, .fullDiskAccess, .mediaLibrary, .usb, .desktopFolder, .documentsFolder,
+            .systemAudioCapture, .fullDiskAccess, .mediaLibrary, .home, .usb, .desktopFolder, .documentsFolder,
             .downloadsFolder, .removableVolumes, .networkVolumes, .developerTools, .appManagement,
         ]
         for id in settingsOnly {

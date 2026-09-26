@@ -1,5 +1,5 @@
 import AppKit
- import ApplicationServices
+import ApplicationServices
 import AVFoundation
 import Contacts
 import CoreBluetooth
@@ -43,6 +43,7 @@ enum AppleAuthorizationMap {
         @unknown default: return .unknown
         }
     }
+
 
     static func contacts(_ status: CNAuthorizationStatus) -> PermissionAuthorization {
         switch status {
@@ -128,7 +129,11 @@ enum LivePermissionCalls {
             locationRequest: { await locationRequest() },
             bluetoothStatus: { bluetoothStatus() },
             bluetoothRequest: { await bluetoothRequest() },
-            automationRequest: { automationRequest() },
+            homeStatus: { homeStatus() },
+            homeRequest: { await homeRequest() },
+            developerToolsStatus: { developerToolsStatus() },
+            automationStatus: { automationStatus(target: $0) },
+            automationRequest: { automationRequest(target: $0) },
             localNetworkNudge: { localNetworkNudge() },
             fullDiskReadable: { fullDiskReadable() },
             openURL: { await openURL($0) },
@@ -225,6 +230,7 @@ enum LivePermissionCalls {
     }
 
     static func mediaStatus() -> PermissionAuthorization {
+        // MPMediaLibrary authorization APIs are unavailable on macOS; Settings + Confirm.
         .unknown
     }
 
@@ -277,8 +283,28 @@ enum LivePermissionCalls {
         return bluetoothStatus()
     }
 
-    static func automationRequest() -> PermissionAuthorization {
-        let source = "tell application \"System Events\" to get name"
+    static func automationStatus(target: String) -> PermissionAuthorization {
+        guard let bundleID = bundleIdentifier(forAutomationTarget: target) else {
+            return .unsupported
+        }
+        // Missing / uninstalled targets must not block the checklist forever.
+        if NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) == nil {
+            return .unsupported
+        }
+        let targetDesc = NSAppleEventDescriptor(bundleIdentifier: bundleID)
+        let status = AEDeterminePermissionToAutomateTarget(
+            targetDesc.aeDesc,
+            typeWildCard,
+            typeWildCard,
+            false
+        )
+        return mapAutomationOSStatus(status)
+    }
+
+    static func automationRequest(target: String) -> PermissionAuthorization {
+        let escaped = target.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        let source = "tell application \"\(escaped)\" to get name"
         guard let script = NSAppleScript(source: source) else {
             return .unknown
         }
@@ -294,6 +320,47 @@ enum LivePermissionCalls {
             return .denied
         }
         return .unknown
+    }
+
+    private static func bundleIdentifier(forAutomationTarget target: String) -> String? {
+        switch target {
+        case "System Events": return "com.apple.systemevents"
+        case "Shortcuts Events": return "com.apple.shortcuts.events"
+        case "TestFlight": return "com.apple.TestFlight"
+        case "Google Chrome": return "com.google.Chrome"
+        case "TextEdit": return "com.apple.TextEdit"
+        default: return nil
+        }
+    }
+
+    private static func mapAutomationOSStatus(_ status: OSStatus) -> PermissionAuthorization {
+        switch status {
+        case noErr:
+            return .granted
+        case OSStatus(errAEEventNotPermitted):
+            return .denied
+        case OSStatus(errAEEventWouldRequireUserConsent):
+            return .notDetermined
+        case OSStatus(procNotFound):
+            // Target not running / not installed — do not leave .unknown forever.
+            return .unsupported
+        default:
+            return .unknown
+        }
+    }
+
+    static func homeStatus() -> PermissionAuthorization {
+        // HomeKit.framework is not shipped for macOS; Settings-only until a public probe exists.
+        .unknown
+    }
+
+    static func homeRequest() async -> PermissionAuthorization {
+        .unknown
+    }
+
+    /// No public Developer Tools probe API; Settings-only grants stay unknown until a host injects status.
+    static func developerToolsStatus() -> PermissionAuthorization {
+        .unknown
     }
 
     static func localNetworkNudge() {
