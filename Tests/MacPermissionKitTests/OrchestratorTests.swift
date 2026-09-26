@@ -4,7 +4,11 @@ import XCTest
 @MainActor
 final class OrchestratorTests: XCTestCase {
     func testAdvanceStopsAtFirstUngranted() async {
-        let (orchestrator, log) = session(probes: [.accessibility: .granted])
+        let (orchestrator, log) = session(
+            required: PermissionKind.startupDefaultOrder,
+            policy: .legacyStartup,
+            probes: [.accessibility: .granted]
+        )
         XCTAssertEqual(orchestrator.nextRequired, .screenRecording)
         let result = await orchestrator.advanceStartup()
         XCTAssertEqual(result?.record.id, .screenRecording)
@@ -127,7 +131,10 @@ final class OrchestratorTests: XCTestCase {
     }
 
     func testSkipOptionalAndRejectRequired() throws {
-        let (orchestrator, _) = session()
+        let (orchestrator, _) = session(
+            required: PermissionKind.startupDefaultOrder,
+            policy: .legacyStartup
+        )
         XCTAssertThrowsError(try orchestrator.skip(.microphone)) { error in
             XCTAssertEqual(error as? PermissionKitError, .skipNotAllowed(.microphone))
         }
@@ -149,7 +156,7 @@ final class OrchestratorTests: XCTestCase {
         }
         let orchestrator = PermissionOrchestrator(
             required: PermissionKind.startupDefaultOrder,
-            policy: .standard,
+            policy: .legacyStartup,
             backend: engine,
             bundleIdentifier: nil
         )

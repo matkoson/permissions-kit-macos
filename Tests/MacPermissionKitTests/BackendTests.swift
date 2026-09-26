@@ -168,7 +168,7 @@ final class BackendTests: XCTestCase {
     func testAutomationDeniedOpensSettings() async {
         let log = CallLog()
         let engine = backend(log) { primitives in
-            primitives.automationRequest = { .denied }
+            primitives.automationRequest = { _ in .denied }
         }
         let event = await engine.request(.automation)
         XCTAssertEqual(event.authorization, .denied)
@@ -176,14 +176,47 @@ final class BackendTests: XCTestCase {
         XCTAssertTrue(event.promptPresented)
     }
 
-    func testAutomationGrantedDoesNotOpenSettings() async {
+    func testAutomationTargetProbesUseStatusPrimitive() {
         let log = CallLog()
         let engine = backend(log) { primitives in
-            primitives.automationRequest = { .granted }
+            primitives.automationStatus = { target in
+                log.add("automation-status:\(target)")
+                return target == "System Events" ? .granted : .denied
+            }
         }
-        let event = await engine.request(.automation)
+        XCTAssertEqual(engine.probe(.automation), .granted)
+        XCTAssertEqual(engine.probe(.automationShortcutsEvents), .denied)
+        XCTAssertEqual(engine.probe(.automationTestFlight), .denied)
+        XCTAssertEqual(engine.probe(.home), .unknown)
+        XCTAssertEqual(engine.probe(.developerTools), .unknown)
+        XCTAssertTrue(log.snapshot.contains("automation-status:System Events"))
+        XCTAssertTrue(log.snapshot.contains("home-status"))
+        XCTAssertTrue(log.snapshot.contains("devtools-status"))
+    }
+
+    func testHomeRequestOpensSettings() async {
+        let log = CallLog()
+        let engine = backend(log) { primitives in
+            primitives.homeStatus = { .denied }
+        }
+        let event = await engine.request(.home)
+        XCTAssertTrue(event.settingsOpened)
+        // settingsOnly path reports unknown from the request event itself
+        XCTAssertEqual(event.authorization, .unknown)
+        XCTAssertTrue(log.snapshot.contains { $0.hasPrefix("open:") && $0.contains("Privacy_HomeKit") })
+    }
+
+    func testAutomationTargetRequestUsesNamedTarget() async {
+        let log = CallLog()
+        let engine = backend(log) { primitives in
+            primitives.automationRequest = { target in
+                log.add("automation:\(target)")
+                return .granted
+            }
+        }
+        let event = await engine.request(.automationGoogleChrome)
         XCTAssertEqual(event.authorization, .granted)
-        XCTAssertFalse(event.settingsOpened)
+        XCTAssertTrue(log.snapshot.contains("automation:Google Chrome"))
     }
 
     func testFrameworkRequestsMapAuthorization() async {

@@ -4,15 +4,23 @@ import XCTest
 final class PresentationTests: XCTestCase {
     func testStandardPolicy() {
         let policy = PermissionPresentationPolicy.standard
+        XCTAssertEqual(policy.startupIDs, PermissionKind.prerequisitesDefaultRequired)
+        XCTAssertTrue(policy.optionalIDs.isEmpty)
+        XCTAssertTrue(policy.blockUntilRequiredGranted)
+        XCTAssertTrue(policy.blockingIDs.contains(.fullDiskAccess))
+        XCTAssertTrue(policy.blockingIDs.contains(.accessibility))
+        XCTAssertFalse(policy.blockingIDs.contains(.appManagement))
+    }
+
+    func testLegacyStartupPolicy() {
+        let policy = PermissionPresentationPolicy.legacyStartup
         XCTAssertEqual(policy.startupIDs, PermissionKind.startupDefaultOrder)
         XCTAssertEqual(
             policy.optionalIDs,
             [.camera, .systemAudioCapture, .automation, .localNetwork]
         )
-        XCTAssertTrue(policy.blockUntilRequiredGranted)
         XCTAssertFalse(policy.blockingIDs.contains(.camera))
         XCTAssertTrue(policy.blockingIDs.contains(.microphone))
-        XCTAssertTrue(policy.blockingIDs.contains(.fullDiskAccess))
     }
 
     func testCustomPolicy() {
@@ -35,14 +43,16 @@ final class PresentationTests: XCTestCase {
         XCTAssertFalse(PermissionSlotCopy.showsDragHint(id: .camera))
         XCTAssertEqual(
             PermissionSlotCopy.dragIntoListHint(bundleName: "Example", id: .accessibility),
-            "Drag Example into the Accessibility list, then return here."
+            "Drag Example into the Device Control and Data Access list, then return here."
         )
         XCTAssertEqual(
             PermissionSlotCopy.waitingForPrompt(id: .microphone),
             "Waiting for the Microphone permission dialog."
         )
-        XCTAssertEqual(PermissionSlot.allCases.count, 9)
+        XCTAssertEqual(PermissionSlot.allCases.count, 11)
         XCTAssertEqual(PermissionSlot.startupGlassShell.rawValue, "SLOT_StartupGlassShell")
+        XCTAssertEqual(PermissionSlot.prerequisitesChecklist.rawValue, "SLOT_PrerequisitesChecklist")
+        XCTAssertEqual(PermissionSlot.prerequisitesSplash.rawValue, "SLOT_PrerequisitesSplash")
     }
 
     func testSourcesDoNotReferenceTheSharePicker() throws {
