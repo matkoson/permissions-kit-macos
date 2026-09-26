@@ -35,5 +35,5 @@ xcrun llvm-cov export \
 	-ignore-filename-regex='LivePermissionCalls\.swift|\.build/checkouts/|Sources/MacPermissionKit/UI/' \
 	"$XCBIN" \
 	Sources/MacPermissionKit \
-	> "$LCOV"
+	>"$LCOV"
 swift "local/LcovToCobertura.swift" "$LCOV" ".build/coverage/cobertura.xml"

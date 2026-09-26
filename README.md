@@ -52,7 +52,7 @@ let session = PermissionSessionController(orchestrator: gate.orchestrator)
 ```
 
 | Surface | Role |
-|---|---|
+| --- | --- |
 | Screen title | **Prerequisites** |
 | Section title | **Checklist** (not Getting Started / Quick Setup) |
 | Aggregate state | Checked iff **all** required items granted; else unchecked |
@@ -93,7 +93,7 @@ Bind the host only to `snapshot`, `pending`, `lastResult`, `relaunchRequired`, `
 ## Presentation slots
 
 | Slot | Surface |
-|---|---|
+| --- | --- |
 | `SLOT_PrerequisitesSplash` | `PrerequisitesSplashView` |
 | `SLOT_PrerequisitesChecklist` | `PrerequisitesChecklistView` / `PrerequisitesRootView` / `PrerequisitesScene` |
 | `SLOT_StartupGlassShell` | `StartupGlassShellView` / `PermissionStartupScene` (legacy) |
