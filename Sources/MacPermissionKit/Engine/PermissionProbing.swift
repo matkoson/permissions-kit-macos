@@ -31,7 +31,13 @@ struct PermissionPrimitives: Sendable {
     var locationRequest: @Sendable () async -> PermissionAuthorization
     var bluetoothStatus: @Sendable () -> PermissionAuthorization
     var bluetoothRequest: @Sendable () async -> PermissionAuthorization
-    var automationRequest: @Sendable () -> PermissionAuthorization
+    var homeStatus: @Sendable () -> PermissionAuthorization
+    var homeRequest: @Sendable () async -> PermissionAuthorization
+    var developerToolsStatus: @Sendable () -> PermissionAuthorization
+    /// Non-prompting Automation probe for a target application name.
+    var automationStatus: @Sendable (String) -> PermissionAuthorization
+    /// May present the Automation TCC prompt for a target application name.
+    var automationRequest: @Sendable (String) -> PermissionAuthorization
     var localNetworkNudge: @Sendable () -> Void
     var fullDiskReadable: @Sendable () -> Bool
     var openURL: @Sendable (URL) async -> Bool
@@ -90,10 +96,20 @@ enum PermissionDecider {
             return primitives.locationStatus()
         case .bluetooth:
             return primitives.bluetoothStatus()
+        case .home:
+            return primitives.homeStatus()
         case .fullDiskAccess:
             return primitives.fullDiskReadable() ? .granted : .denied
+        case .developerTools:
+            return primitives.developerToolsStatus()
+        case .automation, .automationShortcutsEvents, .automationTestFlight,
+             .automationGoogleChrome, .automationTextEdit:
+            if let target = id.automationTargetName {
+                return primitives.automationStatus(target)
+            }
+            return .unknown
         case .systemAudioCapture, .localNetwork, .usb, .desktopFolder, .documentsFolder,
-             .downloadsFolder, .removableVolumes, .networkVolumes, .developerTools, .appManagement, .automation:
+             .downloadsFolder, .removableVolumes, .networkVolumes, .appManagement:
             return .unknown
         }
     }
@@ -145,8 +161,10 @@ enum PermissionDecider {
         case .localNetwork:
             primitives.localNetworkNudge()
             return PermissionBackendEvent(authorization: .unknown, promptPresented: true, settingsOpened: false)
-        case .automation:
-            let authorization = primitives.automationRequest()
+        case .automation, .automationShortcutsEvents, .automationTestFlight,
+             .automationGoogleChrome, .automationTextEdit:
+            let target = id.automationTargetName ?? "System Events"
+            let authorization = primitives.automationRequest(target)
             var opened = false
             if authorization == .denied || authorization == .restricted {
                 opened = await openSettings(id, primitives: primitives)
@@ -202,6 +220,14 @@ enum PermissionDecider {
             return await authorizationRequest(id, primitives: primitives) { await primitives.locationRequest() }
         case .bluetooth:
             return await authorizationRequest(id, primitives: primitives) { await primitives.bluetoothRequest() }
+        case .home:
+            let opened = await openSettings(id, primitives: primitives)
+            let authorization = primitives.homeStatus()
+            return PermissionBackendEvent(
+                authorization: authorization,
+                promptPresented: false,
+                settingsOpened: opened
+            )
         default:
             let opened = await openSettings(id, primitives: primitives)
             return PermissionBackendEvent(authorization: .unknown, promptPresented: false, settingsOpened: opened)

@@ -37,7 +37,7 @@ public final class PermissionOrchestrator {
         backend: any PermissionBackend,
         bundleIdentifier: String?
     ) {
-        self.required = Self.unique(required)
+        self.required = Self.uniqueIDs(required)
         self.policy = policy
         self.backend = backend
         self.bundleIdentifier = bundleIdentifier
@@ -203,7 +203,7 @@ public final class PermissionOrchestrator {
         )
     }
 
-    private static func unique(_ ids: [PermissionID]) -> [PermissionID] {
+    nonisolated public static func uniqueIDs(_ ids: [PermissionID]) -> [PermissionID] {
         var seen: Set<PermissionID> = []
         var ordered: [PermissionID] = []
         for id in ids where seen.insert(id).inserted {
