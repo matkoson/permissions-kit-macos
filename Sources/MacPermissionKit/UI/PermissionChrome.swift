@@ -35,7 +35,9 @@ enum PermissionChrome {
         case .speech: "waveform.badge.mic"
         case .accessibility: "accessibility"
         case .inputMonitoring: "keyboard"
-        case .automation: "applescript"
+        case .automation, .automationShortcutsEvents, .automationTestFlight,
+             .automationGoogleChrome, .automationTextEdit:
+            "applescript"
         case .fullDiskAccess: "internaldrive.fill"
         case .desktopFolder, .documentsFolder, .downloadsFolder: "folder.fill"
         case .removableVolumes, .networkVolumes: "externaldrive.fill"
@@ -48,6 +50,7 @@ enum PermissionChrome {
         case .reminders: "checklist"
         case .photos, .photosAddOnly: "photo"
         case .mediaLibrary: "music.note.list"
+        case .home: "home.fill"
         case .notifications: "bell.fill"
         case .developerTools: "hammer.fill"
         case .appManagement: "app.badge.fill"

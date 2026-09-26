@@ -3,6 +3,7 @@ import SwiftUI
 import SwiftUIX
 
 /// Full-window first-run chrome (`SLOT_StartupGlassShell`).
+/// Prefer `PrerequisitesChecklistView` for host apps; this shell remains for older embeds.
 public struct StartupGlassShellView: View {
     @Bindable public var session: PermissionSessionController
     @Namespace private var glassNamespace
@@ -51,14 +52,11 @@ public struct StartupGlassShellView: View {
         }
         .frame(minWidth: 720, minHeight: 520)
         .onAppear { session.presentStartup() }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            session.refreshFromWindowKey()
-        }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Permissions")
+            Text("Prerequisites")
                 .font(.largeTitle.weight(.semibold))
             Text(subtitle)
                 .font(.title3)

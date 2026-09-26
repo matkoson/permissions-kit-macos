@@ -17,7 +17,8 @@ public final class PermissionSessionController: PermissionStartupGlassShellSlot 
 
     public init(
         orchestrator: PermissionOrchestrator = PermissionOrchestrator(
-            required: PermissionKind.startupDefaultOrder
+            required: PermissionKind.prerequisitesDefaultRequired,
+            policy: .standard
         )
     ) {
         self.orchestrator = orchestrator
@@ -25,11 +26,20 @@ public final class PermissionSessionController: PermissionStartupGlassShellSlot 
     }
 
     public convenience init(
-        required: [PermissionID] = PermissionKind.startupDefaultOrder,
+        required: [PermissionID] = PermissionKind.prerequisitesDefaultRequired,
         policy: PermissionPresentationPolicy = .standard
     ) {
         self.init(
             orchestrator: PermissionOrchestrator(required: required, policy: policy)
+        )
+    }
+
+    public convenience init(configuration: PrerequisitesConfiguration) {
+        self.init(
+            orchestrator: PermissionOrchestrator(
+                required: configuration.required,
+                policy: configuration.presentationPolicy
+            )
         )
     }
 
