@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "${ROOT}"
+if [[ -d .codegraph ]]; then
+  /Users/matkoson/bin/codegraph update || /Users/matkoson/bin/codegraph init
+else
+  /Users/matkoson/bin/codegraph init
+fi

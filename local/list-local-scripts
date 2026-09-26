@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+ls -1 "${ROOT}" | grep -v '^_' | grep -v '\.' || true
